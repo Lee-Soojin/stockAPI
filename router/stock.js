@@ -9,8 +9,14 @@ const getStockPrice = async (code) => {
   try {
     const { data } = await axios.get(url);
     const $ = cheerio.load(data);
-    const price = $(".no_today .blind").first().text();
-    return price.replace(/,/g, "");
+
+    const price = $(".no_today .blind").first().text().replace(/,/g, "");
+    const change = $(".no_exday .blind").first().text().trim();
+    const direction = $(".no_exday .blind").parent().hasClass("nv01")
+      ? "상승"
+      : "하락";
+
+    return { price, change, direction };
   } catch (error) {
     console.error("Error fetching stock price:", error);
     return null;
@@ -24,20 +30,33 @@ router.get("/:code", async (req, res) => {
   res.setHeader("Cache-Control", "no-cache");
   res.setHeader("Connection", "keep-alive");
 
-  const interval = setInterval(async () => {
-    const price = await getStockPrice(code);
+  const sendStockPrice = async () => {
+    const data = await getStockPrice(code);
 
-    if (price) {
-      res.json({ symbol: code, price });
+    if (data) {
+      res.write(
+        `data: ${JSON.stringify({
+          symbol: code,
+          price: Number(data.price),
+          change: Number(data.change),
+          direction: data.direction,
+        })}\n\n`
+      );
     } else {
-      res.status(500).json({ error: "Failed to fetch stock price" });
+      res.write(
+        `data: ${JSON.stringify({ error: "Failed to fetch stock price" })}\n\n`
+      );
     }
-  }, 5000);
+  };
+
+  const interval = setInterval(sendStockPrice, 5000);
 
   req.on("close", () => {
     clearInterval(interval);
     res.end();
   });
+
+  await sendStockPrice();
 });
 
 export default router;
