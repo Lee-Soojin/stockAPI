@@ -14,12 +14,13 @@ const getStockPrice = async (code) => {
 
     const changeElement = $(".no_exday em").first();
     const change = changeElement.find(".blind").text().replace(/,/g, "");
-    const directionClass = changeElement.attr("class");
-    const direction = directionClass.includes("nv01")
-      ? "상승"
-      : directionClass.includes("nv02")
-      ? "하락"
-      : "보합";
+    const directionClass = changeElement.attr("class") || "";
+    let direction = "보합";
+    if (directionClass.includes("nv01")) {
+      direction = "상승";
+    } else if (directionClass.includes("nv02")) {
+      direction = "하락";
+    }
 
     return { price, change, direction };
   } catch (error) {
