@@ -11,10 +11,15 @@ const getStockPrice = async (code) => {
     const $ = cheerio.load(data);
 
     const price = $(".no_today .blind").first().text().replace(/,/g, "");
-    const change = $(".no_exday .blind").first().text().trim();
-    const direction = $(".no_exday .blind").parent().hasClass("nv01")
+
+    const changeElement = $(".no_exday em").first();
+    const change = changeElement.find(".blind").text().replace(/,/g, "");
+    const directionClass = changeElement.attr("class");
+    const direction = directionClass.includes("nv01")
       ? "상승"
-      : "하락";
+      : directionClass.includes("nv02")
+      ? "하락"
+      : "보합";
 
     return { price, change, direction };
   } catch (error) {
